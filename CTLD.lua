@@ -4686,6 +4686,45 @@ function ctld.findNearestVisibleEnemy(_jtacUnit, _targetType,_distance)
     local _tempDist = nil
 
     -- finish this function
+
+    local _priority = false
+    -- If we're looking for priority targets then search to see if any are left in range
+    if _targetType == "priority" then
+        for _i = 1, #_enemyGroups do
+            if _enemyGroups[_i] ~= nil then
+                _groupName = _enemyGroups[_i]:getName()
+                _units = ctld.getGroup(_groupName)
+                if #_units > 0 then
+                    for _y = 1, #_units do
+                        local _targeted = false
+                        if not _distance then
+                            _targeted = ctld.alreadyTarget(_jtacUnit, _units[_x])
+                        end
+
+                        if (string.match(_units[_y]:getName(), "priority") ~= nil) then
+                            -- calc distance
+                            _tempPoint = _units[_y]:getPoint()
+                            _tempDist = ctld.getDistance(_tempPoint, _jtacPoint)
+
+                            if _tempDist < _maxDistance and _tempDist < _nearestDistance then
+
+                                local _offsetEnemyPos = { x = _tempPoint.x, y = _tempPoint.y + 2.0, z = _tempPoint.z }
+                                local _offsetJTACPos = { x = _jtacPoint.x, y = _jtacPoint.y + 2.0, z = _jtacPoint.z }
+                                -- calc visible
+
+                                if land.isVisible(_offsetEnemyPos, _offsetJTACPos) and _targeted == false then
+                                    _priority = true
+                                    -- all we need to know is there's at least one
+                                    break
+                                end
+                            end                      
+                        end 
+                    end
+                end
+            end
+        end
+    end
+
     for _i = 1, #_enemyGroups do
         if _enemyGroups[_i] ~= nil then
             _groupName = _enemyGroups[_i]:getName()
@@ -4704,7 +4743,15 @@ function ctld.findNearestVisibleEnemy(_jtacUnit, _targetType,_distance)
 
                     local _allowedTarget = true
 
-                    if _targetType == "vehicle" then
+                    if _targetType == "priority" then
+
+                        if _priority == true then
+                            _allowedTarget = (string.match(_units[_x]:getName(), "priority") ~= nil)
+                        else
+                            _allowedTarget = true
+                        end
+
+                    elseif _targetType == "vehicle" then
 
                         _allowedTarget = ctld.isVehicle(_units[_x])
 
